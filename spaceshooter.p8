@@ -1,0 +1,269 @@
+pico-8 cartridge // http://www.pico-8.com
+version 34
+__lua__
+function _init()
+	t=0
+
+ ship = {
+		h=4, 
+		sp=1,
+		x = 63,
+		y = 100,
+		p = 0,
+		imm = false,
+		t = 0,
+		box = {x1=0, y1=0,
+									x2=7, x2=7}
+		}
+
+ bullets = {}
+ enemies = {}
+ expl = {}
+ stars = {}
+
+ for i=1,128 do
+ 	add(stars, {
+ 		x=rnd(128),
+ 		y=rnd(128),
+ 		s=rnd(2)+1
+ 	})
+ end
+
+
+	start()
+end
+
+function start()
+	_update = update_game
+	_draw = draw_game
+end
+
+function game_over()
+	_update = update_over
+	_draw = draw_over
+end
+
+function update_over()
+end
+function draw_over()
+	cls()
+	print("game_over!", 40, 50,4)
+end
+
+
+function explode(_x,_y)
+	add(expl, {x=_x,y=_y,t=0})
+end
+
+function fire()
+	local b = {
+		sp=3,
+		x=ship.x,
+		y=ship.y,
+		dx=0,
+		dy=-3,
+		box = {x1=2, y1=2,
+									x2=5, x2=5}
+	}
+	add(bullets,b)
+end
+
+function draw_game()
+	cls()
+
+	for st in all(stars) do
+		pset(st.x, st.y, 6)
+	end
+	--bullets
+	for b in all(bullets) do
+		spr(b.sp, b.x, b.y)
+		--draw_coll(b)
+	end
+
+	for ex in all(expl) do
+		circ(ex.x,ex.y,ex.t/3,8+ex.t%3)
+	end
+
+	--enemies
+	for e in all(enemies) do
+		spr(e.sp, e.x, e.y)
+		--draw_coll(e)
+	end
+	--ship
+	if not ship.imm or t%8<4 then
+		spr(ship.sp,ship.x,ship.y)
+	end
+	--draw_coll(ship)
+
+	-- ui drawing
+	for i=1,4 do
+		if i<=ship.h then
+		 spr(33,80+6*i,3)
+		else
+		 spr(34,80+6*i,3)
+		end
+	end
+
+end
+
+function update_game()
+	t=t+1
+	if ship.imm then
+		ship.t += 1
+		if ship.t>30 then
+			ship.imm=false
+			ship.t=0
+		end
+	end
+
+	for st in all(stars) do
+		st.y += st.s
+		if st.y >= 128 then
+			st.y = 0
+			st.x = rnd(128)
+		end
+	end
+
+	for ex in all(expl) do
+		ex.t+=1
+		if ex.t == 13 then
+			del(expl, ex)
+		end
+	end
+
+	--enemy logic
+	if #enemies <= 0 then
+		respawn()
+	end
+	for e in all(enemies) do
+		e.m_y +=1.2
+		e.x = e.r*sin(e.d*t/50) + e.m_x
+		e.y = e.r*cos(t/50) + e.m_y
+		if coll(ship,e) and not
+					ship.imm then
+			ship.imm = true
+			ship.h -= 1
+			ship.y += 4
+			if ship.h <= 0 then
+				game_over()
+			end
+
+		end
+
+		if e.y > 150 then
+			del(enemies,e)
+		end
+
+	end
+
+	for b in all(bullets) do
+		b.x+=b.dx
+		b.y+=b.dy
+		if b.x < 0 or b.x > 128 or
+		 b.y < 0 or b.y > 128 then
+			del(bullets, b)
+		end
+		for e in all(enemies) do
+			if coll(b,e) then
+				del(enemies,e)
+				ship.p+=1
+				explode(e.x,e.y)
+			end
+		end
+
+	end
+
+	if(t%8<4) then
+		ship.sp=1
+	else
+		ship.sp=2
+	end
+
+	local shooting = false
+	if btn(❎) then
+		fire()
+		shooting = true
+		ship.y+=0.5
+ end
+
+	if not shooting then
+		if btn(0) then ship.x-=1 end
+		if btn(1) then ship.x+=1 end
+		if btn(2) then ship.y-=1 end
+		if btn(3) then ship.y+=1 end
+	end
+
+end
+-->8
+function coll(a,b)
+	--todo
+	local box_a = abs_box(a)
+	local box_b = abs_box(b)
+
+	if box_a.x1 > box_b.x2 or
+				box_a.y1 > box_b.y2 or
+				box_b.x1 > box_a.x2 or
+				box_b.y1 > box_b.y2 then
+		return false
+	else
+		return true
+	end
+end
+
+function draw_coll(o)
+	local o_box = abs_box(o)
+	rect(o_box.x1, o_box.y1,
+						o_box.x2, o_box.y2,
+						11)
+end
+
+function abs_box(s)
+ -- returns the position of the
+ -- collision box
+	local box = {}
+	box.x1 = s.box.x1 + s.x
+	box.y1 = s.box.y1 + s.y
+	box.x2 = s.box.x2 + s.x
+	box.y2 = s.box.x2 + s.y
+	return box
+end
+-->8
+function respawn()
+	local n = flr(rnd(9))+2
+	for i=1,4 do
+		local d = -1
+		if rnd(1)<0.5 then d=1 end
+	 add(enemies, {
+	 	sp=17,
+	 	m_x=10+i*16,
+	 	m_y=i*4-10,
+	 	d=d,
+	 	x=-32,
+	 	y=-32,
+	 	r=10,
+	 	box = {x1=0, y1=0,
+	 								x2=7, x2=7}
+	 	})
+	end
+end
+__gfx__
+00000000008008000080080000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000008888000088880000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00700700008dd800008dd80000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00077000008dd800008dd800000aa000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00077000088888800888888000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00700700088998800889988000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+000000000800e080080e008000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000a00000000a00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000030003000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000033333000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000003330000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000003330000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000003330000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000080800000606000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000888880006666600000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000088800000666000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000008000000060000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
