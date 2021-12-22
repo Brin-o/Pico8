@@ -6,19 +6,24 @@ v=0
 lv=0
 lh=0
 t=0
-stage = {a = 150, b = 3220}
+stage = {a = 150, b = 300}
+r=0
 function _draw()
+	dither(5000, 0)
 	t+=1
 	--cls()
 	if(t<stage.a)then
 		for i=0,128,3 do
-			line(i,0 , i, t+sin(time()+i*0.2)*10, 15)
+			line(i,0,i,t+sin(time()+i*0.2)*10, 15)
 		end
 	elseif(t<stage.b) then
-		--if(t==stage.a) then t=0 end
-		circfill(64,64,sin(t)*100,3)
+		for i=0,128,3 do
+			line(0, i, t-155+sin(time()+i*0.2)*10,i,14)
+		end
+	else
+		t=0
 	end
-	print(t, 0,0,2)
+	print(t,0,0,11)
 end
 -->8
 --tools

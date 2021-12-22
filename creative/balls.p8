@@ -47,7 +47,7 @@ function _draw()
 
 end
 -->8
---tools
+--creative tools
 
 function dither(val, c)
 	for x=1,val do

@@ -1,23 +1,34 @@
 pico-8 cartridge // http://www.pico-8.com
 version 34
 __lua__
-t=0
+function _init()
+	t=0
+	c=0
+end
+
+function _update60()
+	t+=1
+end
+
 function _draw()
- t+=1
- cls()
- --pogruntaj kaj s tem??
- for i=0,48,4 do
- 	local ti= t+i
- 	local s = min(t, 20)
- 	local v = min(t/3,100)
-  local r = s+sin(ti*0.01)*v
-  local x1 = 64+sin(ti*0.01)*r
-  local y1 = 64+cos(ti*0.01)*r
-  local x2 = 64-sin(ti*0.01)*r
-  local y2 = 64-cos(ti*0.01)*r
-  line(x1,y1+30,x2,y2+30,15)
-  line(x1,y1-30,x2,y2-30,14)
- end
+	cls()
+	c += sin(time()*0.001)*10
+	c = min(c, 30)
+	h=sin(t*0.01)*9.9
+	for i=0,128,8 do
+		local w=sin((t+i*0.7)*0.01)*4.9
+		for p=0,64,12 do
+			rect_c(i+p,i-p,c+w,c+w,i)
+			rect_c(i-p,i+p,c+w,c+w,i)
+		end
+	end
+end
+-->8
+--tools
+
+--draw a cnetered rect
+function rect_c(x,y,w,h,c)
+	rect(x-w/2,y-h/2,x+w/2,y+h/2,c)
 end
 __gfx__
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
